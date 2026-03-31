@@ -2,6 +2,8 @@ import discord
 import requests
 import random
 import redis
+import os
+import asyncio
 from datetime import datetime
 from dotenv import load_dotenv
 
