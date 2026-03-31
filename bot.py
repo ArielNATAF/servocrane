@@ -85,15 +85,16 @@ def save_last_post(url):
         f.write(url)
 
 
-def fetch_latest_article():
+def fetch_latest_article(verbose=False):
     try:
         headers = HEADERS.copy()
         headers["User-Agent"] = random.choice(USER_AGENTS)
 
         res = requests.post(URL, json=PAYLOAD, headers=headers)
 
-        print("STATUS:", res.status_code)
-        print("RESPONSE:", res.text[:1000])  # affiche début
+        if verbose:
+            print("STATUS:", res.status_code)
+            print("RESPONSE:", res.text[:1000])  # affiche début
 
         data = res.json()
         article = data["news"][0]
@@ -118,15 +119,21 @@ async def check_news():
     channel = client.get_channel(CHANNEL_ID)
 
     last_post = get_last_post()
+    first_run = True
 
     while not client.is_closed():
         # Anti-detection: Small jitter before fetching (1-10s)
         await asyncio.sleep(random.randint(1, 10))
         
-        article = fetch_latest_article()
+        # Show logs on first run or if it's potentially a new article
+        article = fetch_latest_article(verbose=first_run)
 
         if article:
             if article["link"] != last_post:
+                # If we found a new article, re-fetch with verbose=True to show the API response in logs
+                if not first_run:
+                    fetch_latest_article(verbose=True)
+
                 now = datetime.now().strftime("%H:%M:%S")
                 print(f"[{now}] Nouvelle actu trouvée :", article["title"])
 
@@ -141,6 +148,8 @@ async def check_news():
             else:
                 now = datetime.now().strftime("%H:%M:%S")
                 print(f"[{now}] Pas de nouveauté")
+
+        first_run = False
 
         # Anti-detection: Randomized sleep (4 to 7 minutes)
         sleep_time = random.randint(240, 420)
