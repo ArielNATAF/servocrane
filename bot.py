@@ -79,12 +79,12 @@ async def on_message(message):
 
     content = message.content.lower().strip()
 
-    if content == "!register":
+    if content == "!servo-register":
         database.save_channel(message.channel.id)
         await message.channel.send("✅ **Salon enregistré !** Le bot publiera les actus Warhammer ici.")
         print(f"➕ Salon enregistré : {message.channel.name}")
 
-    elif content == "!unregister":
+    elif content == "!servo-unregister":
         database.remove_channel(message.channel.id)
         await message.channel.send("❌ **Salon retiré.** Le bot ne publiera plus ici.")
         print(f"➖ Salon retiré : {message.channel.name}")

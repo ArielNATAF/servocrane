@@ -1,51 +1,44 @@
 # 🤖 Warhammer Community News Bot (Servo-Crane)
 
-A lightweight Discord bot that monitors the [Warhammer Community](https://www.warhammer-community.com/) news feed and automatically posts updates to your server.
+A modular, high-performance Discord bot that monitors the [Warhammer Community](https://www.warhammer-community.com/) news feed and broadcasts updates to multiple channels simultaneously.
 
 ## ✨ Features
 
-- **🚀 Real-time Monitoring**: Scans the official API every 4-7 minutes.
-- **🕵️ Stealth Mode**: Randomized intervals, pre-fetch jitter, and User-Agent rotation to avoid detection.
-- **🗄️ Permanent Memory**: Support for Upstash Redis to keep tracking news even after server restarts.
-- **🛡️ Easy Deployment**: Docker-ready and optimized for free-tier hosting (Koyeb, Render, etc.).
+- **🚀 Real-time Monitoring**: Polling the official API with randomized intervals (4-7 mins).
+- **📡 Multi-Channel Support**: Dynamically register or unregister channels using Discord commands.
+- **🗄️ Hybrid Persistence**: Persistent state using **Redis** (primary) and local file fallback (secondary).
+- **🛡️ Modular Architecture**: Cleanly separated logic into `api`, `database`, `config`, and `bot` modules.
+- **☁️ Cloud Ready**: Optimized for 24/7 deployment on **Oracle Cloud Infrastructure (OCI)**.
 
-## 🛠️ Local Setup
+## 🛠️ Project Structure
 
-1. **Clone the repository** (or copy the files).
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. **Configure Environment Variables**:
-   Create a `.env` file in the root directory:
-   ```env
-   DISCORD_TOKEN=your_bot_token_here
-   CHANNEL_ID=your_discord_channel_id_here
-   REDIS_URL=optional_upstash_redis_url  # Falls back to local file if empty
-   ```
-4. **Run the bot**:
-   ```bash
-   python bot.py
-   ```
+- `bot.py`: Main entry point and Discord event handlers.
+- `api.py`: Warhammer Community API integration.
+- `database.py`: Redis and file-based state management.
+- `config.py`: Configuration and environment variables.
 
-## ☁️ 24/7 Deployment (Free)
+## ⚡ Commands
 
-This bot is designed to run on free services like **Koyeb** or **Render**.
+- **`!servo-register`**: Registers the current channel to receive news updates. *(Requires Manage Channels permission)*.
+- **`!servo-unregister`**: Stops news updates for the current channel. *(Requires Manage Channels permission)*.
 
-1. **Permanent Memory (Optional but Recommended)**:
-   - Create a free database on [Upstash](https://upstash.com/).
-   - Copy the Redis URL into your environment variables.
-2. **Hosting**:
-   - Push your code to GitHub.
-   - Connect your repository to **Koyeb** or **Render**.
-   - Add your `.env` variables (`DISCORD_TOKEN`, `CHANNEL_ID`, `REDIS_URL`) in the service's dashboard.
-   - The bot will automatically build using the provided `Dockerfile`.
+## 🚀 Setup & Deployment
+
+### 1. Local Configuration
+1.  Install dependencies: `pip install -r requirements.txt`
+2.  Create a `.env` file:
+    ```env
+    DISCORD_TOKEN=your_token
+    CHANNEL_ID=fallback_id
+    REDIS_URL=redis://your-redis-url
+    ```
+
+### 2. Discord Developer Portal
+- **Enable "Message Content Intent"** in the Bot settings to allow the registration commands to work.
 
 ## 📜 Dependencies
 
 - `discord.py`: For Discord integration.
 - `requests`: For fetching news data.
 - `python-dotenv`: For managing secrets.
-- `redis`: For cloud storage.
-
----
+- `redis`: For cloud storage and persistence.
