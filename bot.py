@@ -60,9 +60,9 @@ async def check_news_loop():
 
         first_run = False
 
-        # Anti-detection: Randomized sleep (4 to 7 minutes)
-        sleep_time = random.randint(240, 420)
-        print(f"💤 Prochain check dans {sleep_time // 60}m {sleep_time % 60}s...")
+        # Anti-detection: Randomized sleep (10 to 20 minutes)
+        sleep_time = random.randint(600, 1200)
+        # print(f"💤 Prochain check dans {sleep_time // 60}m {sleep_time % 60}s...")
         await asyncio.sleep(sleep_time)
 
 
