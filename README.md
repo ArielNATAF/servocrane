@@ -21,6 +21,7 @@ A modular, high-performance Discord bot that monitors the [Warhammer Community](
 
 - **`!servo-register`**: Registers the current channel to receive news updates. *(Requires Manage Channels permission)*.
 - **`!servo-unregister`**: Stops news updates for the current channel. *(Requires Manage Channels permission)*.
+- **`!servo-status`**: Get the bot status, uptime, last query time, and last post article. *(Requires Manage Channels permission)*.
 
 ## 🚀 Setup & Deployment
 
@@ -154,6 +155,36 @@ Add this line:
 **Check backup logs:**
 ```bash
 cat ~/servocrane/backup.log
+```
+
+### 6. Securing your Oracle Cloud VPS (Fail2ban)
+
+Since your server has an open SSH port, it's highly recommended to install `fail2ban` to protect it against brute-force attacks by automatically blocking malicious IP addresses.
+
+**Install Fail2ban:**
+```bash
+sudo apt update
+sudo apt install fail2ban -y
+```
+
+**Configure Fail2ban:**
+Fail2ban works out of the box for SSH, but it's best practice to create a local configuration file so updates don't overwrite your settings:
+```bash
+sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+```
+*(Optional) You can edit `/etc/fail2ban/jail.local` to adjust the `bantime` or `maxretry` limits.*
+
+**Start and Enable the Service:**
+```bash
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+```
+
+**Verify Fail2ban is working:**
+```bash
+sudo systemctl status fail2ban
+# See the number of currently banned IPs:
+sudo fail2ban-client status sshd
 ```
 
 ## 📜 Dependencies

@@ -8,6 +8,11 @@ from config import TOKEN
 import database
 import api
 
+# -- Global Bot State --
+bot_start_time = datetime.now()
+last_query_time = None
+user_cooldowns = {}  # Tracks last command time per user
+
 # -- Discord Setup --
 intents = discord.Intents.default()
 intents.message_content = True  # Required for !register command
@@ -24,6 +29,9 @@ async def check_news_loop():
     while not client.is_closed():
         # Anti-detection: Small jitter before fetching (1-10s)
         await asyncio.sleep(random.randint(1, 10))
+        
+        global last_query_time
+        last_query_time = datetime.now()
         
         # Show verbose logs on first run or if it's potentially a new article
         article = api.fetch_latest_article(verbose=first_run)
@@ -78,6 +86,19 @@ async def on_message(message):
         return
 
     content = message.content.lower().strip()
+    
+    # Anti-spam: check cooldown (5 seconds)
+    if content.startswith("!servo-"):
+        user_id = message.author.id
+        now = datetime.now().timestamp()
+        last_time = user_cooldowns.get(user_id, 0)
+        
+        if now - last_time < 5:
+            # Optionally add a silent ignore or a small reaction
+            # print(f"⏳ Anti-spam: {message.author} ignoré")
+            return
+        
+        user_cooldowns[user_id] = now
 
     if content == "!servo-register":
         database.save_channel(message.channel.id)
@@ -88,6 +109,27 @@ async def on_message(message):
         database.remove_channel(message.channel.id)
         await message.channel.send("❌ **Salon retiré.** Le bot ne publiera plus ici.")
         print(f"➖ Salon retiré : {message.channel.name}")
+
+    elif content == "!servo-status":
+        uptime = datetime.now() - bot_start_time
+        uptime_str = str(uptime).split('.')[0]  # Remove microseconds
+        
+        last_post_link = database.get_last_post() or "Aucun"
+        channels_count = len(database.get_registered_channels())
+        
+        last_query_str = last_query_time.strftime("%d/%m/%Y %H:%M:%S") if last_query_time else "Jamais"
+        ping_ms = round(client.latency * 1000)
+        
+        status_msg = (
+            "📊 **Status du Servo-Crane** 📊\n"
+            f"**Uptime :** `{uptime_str}`\n"
+            f"**Dernière vérification :** `{last_query_str}`\n"
+            f"**Dernier article posté :** {last_post_link}\n"
+            f"**Salons abonnés :** `{channels_count}`\n"
+            f"**Ping :** `{ping_ms}ms`"
+        )
+        await message.channel.send(status_msg)
+        print(f"📊 Status demandé par {message.author} dans {message.channel.name}")
 
 
 @client.event

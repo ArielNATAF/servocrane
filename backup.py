@@ -4,7 +4,7 @@ Servo-Crane Redis Backup Script
 Exports Redis state to backup/backup.json and pushes it to the 'redis-backup' git branch.
 
 Setup (run once on the server):
-  git remote set-url origin https://<YOUR_PAT>@github.com/<user>/servo-crane.git
+  git remote set-url origin https://<YOUR_PAT>@github.com/<user>/servocrane.git
   git checkout --orphan redis-backup
   git rm -rf .
   git commit --allow-empty -m "Init redis-backup branch"
