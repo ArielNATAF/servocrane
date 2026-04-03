@@ -4,10 +4,10 @@ A modular, high-performance Discord bot that monitors the [Warhammer Community](
 
 ## ✨ Features
 
-- **🚀 Real-time Monitoring**: Polling the official API with randomized intervals (4-7 mins).
-- **📡 Multi-Channel Support**: Dynamically register or unregister channels using Discord commands.
+- **🚀 Real-time Monitoring**: Polling the official API with randomized intervals (10-20 mins).
+- **📡 Multi-Channel Support**: Dynamically register or unregister channels using **Slash Commands** or prefix commands.
 - **🗄️ Hybrid Persistence**: Persistent state using **Redis** (primary) and local file fallback (secondary).
-- **🛡️ Modular Architecture**: Cleanly separated logic into `api`, `database`, `config`, and `bot` modules.
+- **🛡️ Modern Interface**: Supports Discord Slash Commands with optional parameters for targeted channel management.
 - **☁️ Cloud Ready**: Optimized for 24/7 deployment via `systemd`.
 
 ## 🛠️ Project Structure
@@ -19,9 +19,20 @@ A modular, high-performance Discord bot that monitors the [Warhammer Community](
 
 ## ⚡ Commands
 
-- **`!servo-register`**: Registers the current channel to receive news updates. *(Requires Manage Channels permission)*.
-- **`!servo-unregister`**: Stops news updates for the current channel. *(Requires Manage Channels permission)*.
-- **`!servo-status`**: Get the bot status, uptime, last query time, and last post article. *(Requires Manage Channels permission)*.
+### Slash Commands (Recommended)
+- **`/servo-register`**: Registers a channel for news updates.
+    - `channel` (optional): Specify a different channel to register.
+- **`/servo-unregister`**: Stops news updates for a channel.
+    - `channel` (optional): Specify a different channel to unregister.
+- **`/servo-status`**: Get the bot status, uptime, and last query time.
+
+### Legacy Prefix Commands
+- **`!servo-register`**: Registers the current channel.
+- **`!servo-unregister`**: Unregisters the current channel.
+- **`!servo-status`**: Get diagnostic information.
+
+> [!NOTE]
+> All admin commands require the **Manage Channels** permission.
 
 ## 🚀 Setup & Deployment
 
@@ -35,7 +46,8 @@ A modular, high-performance Discord bot that monitors the [Warhammer Community](
     ```
 
 ### 2. Discord Developer Portal
-- **Enable "Message Content Intent"** in the Bot settings to allow the registration commands to work.
+- **Enable "Message Content Intent"** in the Bot settings to allow the prefix commands to work.
+- **OAuth2 Scopes**: Ensure the bot is invited with the `applications.commands` scope (in addition to `bot`).
 
 ### 3. Redis (Optional but Recommended)
 

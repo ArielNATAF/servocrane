@@ -1,4 +1,6 @@
 import discord
+from discord.ext import commands
+from discord import app_commands
 import asyncio
 import random
 from datetime import datetime
@@ -16,17 +18,18 @@ user_cooldowns = {}  # Tracks last command time per user
 # -- Discord Setup --
 intents = discord.Intents.default()
 intents.message_content = True  # Required for !register command
-client = discord.Client(intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
+tree = bot.tree
 
 # -- Background Loop --
 async def check_news_loop():
     """Main background task that polls for new articles."""
-    await client.wait_until_ready()
+    await bot.wait_until_ready()
     
     last_post = database.get_last_post()
     first_run = True
 
-    while not client.is_closed():
+    while not bot.is_closed():
         # Anti-detection: Small jitter before fetching (1-10s)
         await asyncio.sleep(random.randint(1, 10))
         
@@ -54,7 +57,7 @@ async def check_news_loop():
                 channel_ids = database.get_registered_channels()
                 for c_id in channel_ids:
                     try:
-                        channel = client.get_channel(c_id)
+                        channel = bot.get_channel(c_id)
                         if channel:
                             await channel.send(message)
                     except Exception as e:
@@ -75,10 +78,10 @@ async def check_news_loop():
 
 
 # -- Commands --
-@client.event
+@bot.event
 async def on_message(message):
     # Ignore bot's own messages
-    if message.author == client.user:
+    if message.author == bot.user:
         return
 
     # Check for admin permissions (Manage Channels)
@@ -118,7 +121,7 @@ async def on_message(message):
         channels_count = len(database.get_registered_channels())
         
         last_query_str = last_query_time.strftime("%d/%m/%Y %H:%M:%S") if last_query_time else "Jamais"
-        ping_ms = round(client.latency * 1000)
+        ping_ms = round(bot.latency * 1000)
         
         status_msg = (
             "📊 **Status du Servo-Crane** 📊\n"
@@ -132,15 +135,79 @@ async def on_message(message):
         print(f"📊 Status demandé par {message.author} dans {message.channel.name}")
 
 
-@client.event
+# -- Slash Commands --
+@bot.tree.command(name="servo-register", description="Enregistre un salon pour recevoir les actus Warhammer")
+@app_commands.describe(channel="Le salon où les news seront postées (optionnel, par défaut celui-ci)")
+@app_commands.checks.has_permissions(manage_channels=True)
+async def servo_register(interaction: discord.Interaction, channel: discord.TextChannel = None):
+    # If no channel is provided, use the current channel
+    target_channel = channel or interaction.channel
+    
+    database.save_channel(target_channel.id)
+    await interaction.response.send_message(f"✅ **Salon enregistré !** Le bot publiera les actus Warhammer dans {target_channel.mention}.")
+    print(f"➕ Salon enregistré via slash: {target_channel.name}")
+
+@bot.tree.command(name="servo-unregister", description="Retire un salon de la liste des abonnés")
+@app_commands.describe(channel="Le salon à retirer (optionnel, par défaut celui-ci)")
+@app_commands.checks.has_permissions(manage_channels=True)
+async def servo_unregister(interaction: discord.Interaction, channel: discord.TextChannel = None):
+    target_channel = channel or interaction.channel
+    database.remove_channel(target_channel.id)
+    await interaction.response.send_message(f"❌ **Salon retiré.** Le bot ne publiera plus dans {target_channel.mention}.")
+    print(f"➖ Salon retiré via slash: {target_channel.name}")
+
+@bot.tree.command(name="servo-status", description="Affiche les statistiques et l'état du bot")
+async def servo_status(interaction: discord.Interaction):
+    uptime = datetime.now() - bot_start_time
+    uptime_str = str(uptime).split('.')[0]
+    
+    last_post_link = database.get_last_post() or "Aucun"
+    channels_count = len(database.get_registered_channels())
+    
+    last_query_str = last_query_time.strftime("%d/%m/%Y %H:%M:%S") if last_query_time else "Jamais"
+    ping_ms = round(bot.latency * 1000)
+    
+    status_msg = (
+        "📊 **Status du Servo-Crane** 📊\n"
+        f"**Uptime :** `{uptime_str}`\n"
+        f"**Dernière vérification :** `{last_query_str}`\n"
+        f"**Dernier article posté :** {last_post_link}\n"
+        f"**Salons abonnés :** `{channels_count}`\n"
+        f"**Ping :** `{ping_ms}ms`"
+    )
+    await interaction.response.send_message(status_msg)
+    print(f"📊 Status demandé via slash par {interaction.user} dans {interaction.channel.name}")
+
+@servo_register.error
+@servo_unregister.error
+async def slash_command_error(interaction: discord.Interaction, error):
+    if isinstance(error, app_commands.errors.MissingPermissions):
+        await interaction.response.send_message("❌ Tu n'as pas la permission `Gérer les salons` pour utiliser cette commande.", ephemeral=True)
+    else:
+        # Check if already responded to avoid double response errors
+        if not interaction.response.is_done():
+            await interaction.response.send_message(f"❌ Une erreur est survenue : {error}", ephemeral=True)
+        else:
+            await interaction.followup.send(f"❌ Une erreur est survenue : {error}", ephemeral=True)
+
+
+@bot.event
 async def on_ready():
-    print(f"🚀 Connecté en tant que {client.user}!")
+    print(f"🚀 Connecté en tant que {bot.user}!")
+    
+    # Sync slash commands
+    try:
+        synced = await bot.tree.sync()
+        print(f"🔄 {len(synced)} commandes slash synchronisées.")
+    except Exception as e:
+        print(f"❌ Erreur de synchro slash: {e}")
+
     # Start background task
-    client.loop.create_task(check_news_loop())
+    bot.loop.create_task(check_news_loop())
 
 
 if __name__ == "__main__":
     if not TOKEN:
         print("❌ 'DISCORD_TOKEN' non trouvé dans le fichier .env")
     else:
-        client.run(TOKEN)
+        bot.run(TOKEN)
