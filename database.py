@@ -94,23 +94,32 @@ def remove_channel(channel_id):
 def get_last_post():
     if r:
         try:
-            return r.get("last_post")
-        except:
-            pass
-    
+            val = r.get("last_post")
+            if val is not None:
+                return val
+        except Exception as e:
+            print(f"⚠️ Erreur lecture Redis: {e}")
+            
     if not os.path.exists(LAST_FILE):
         return None
-    with open(LAST_FILE, "r") as f:
-        return f.read().strip()
+    try:
+        with open(LAST_FILE, "r") as f:
+            return f.read().strip()
+    except Exception as e:
+        print(f"⚠️ Erreur lecture fichier local: {e}")
+        return None
 
 
 def save_last_post(url):
     if r:
         try:
             r.set("last_post", url)
-            return
-        except:
-            pass
+        except Exception as e:
+            print(f"⚠️ Erreur sauvegarde Redis: {e}")
             
-    with open(LAST_FILE, "w") as f:
-        f.write(url)
+    try:
+        with open(LAST_FILE, "w") as f:
+            f.write(url)
+    except Exception as e:
+        print(f"⚠️ Erreur sauvegarde fichier local: {e}")
+

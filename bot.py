@@ -14,6 +14,7 @@ import api
 bot_start_time = datetime.now()
 last_query_time = None
 user_cooldowns = {}  # Tracks last command time per user
+news_loop_started = False
 
 # -- Discord Setup --
 intents = discord.Intents.default()
@@ -26,7 +27,6 @@ async def check_news_loop():
     """Main background task that polls for new articles."""
     await bot.wait_until_ready()
     
-    last_post = database.get_last_post()
     first_run = True
 
     while not bot.is_closed():
@@ -40,6 +40,7 @@ async def check_news_loop():
         article = api.fetch_latest_article(verbose=first_run)
 
         if article:
+            last_post = database.get_last_post()
             if article["link"] != last_post:
                 # If we found a new article, re-fetch with verbose=True for logging
                 if not first_run:
@@ -64,7 +65,6 @@ async def check_news_loop():
                         print(f"❌ Erreur envoi sur {c_id}: {e}")
 
                 database.save_last_post(article["link"])
-                last_post = article["link"]
             else:
                 now = datetime.now().strftime("%H:%M:%S")
                 print(f"[{now}] Pas de nouveauté")
@@ -193,6 +193,7 @@ async def slash_command_error(interaction: discord.Interaction, error):
 
 @bot.event
 async def on_ready():
+    global news_loop_started
     print(f"🚀 Connecté en tant que {bot.user}!")
     
     # Sync slash commands
@@ -202,8 +203,10 @@ async def on_ready():
     except Exception as e:
         print(f"❌ Erreur de synchro slash: {e}")
 
-    # Start background task
-    bot.loop.create_task(check_news_loop())
+    # Start background task if not already started
+    if not news_loop_started:
+        news_loop_started = True
+        bot.loop.create_task(check_news_loop())
 
 
 if __name__ == "__main__":
